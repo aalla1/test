@@ -282,4 +282,121 @@
   function drawFX(){
     if(!running) return;
 
-    // fade t
+    // fade trail
+    fctx.fillStyle = "rgba(0,0,0,0.18)";
+    fctx.fillRect(0,0,innerWidth,innerHeight);
+
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.vy += 0.05; // gravity
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life--;
+
+      const a = Math.max(0, p.life/140);
+      fctx.fillStyle = `hsla(${p.hue},100%,60%,${a})`;
+      fctx.beginPath();
+      fctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      fctx.fill();
+
+      if(p.life<=0) particles.splice(i,1);
+    }
+
+    // Continuous random bursts
+    if (Math.random() < 0.10) {
+      fireworks.burst(
+        Math.random() * innerWidth,
+        Math.random() * (innerHeight * 0.45) + 40,
+        160, 3.0, 8.5, 140
+      );
+    }
+
+    requestAnimationFrame(drawFX);
+  }
+
+  // --- Floating hearts (starts after YES) ---
+  const hearts = document.getElementById("hearts");
+  const hctx = hearts.getContext("2d");
+  const heartsP = [];
+  let heartsOn = false;
+
+  function resizeHearts(){
+    hearts.width = innerWidth * devicePixelRatio;
+    hearts.height = innerHeight * devicePixelRatio;
+    hctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  }
+  addEventListener("resize", resizeHearts);
+  resizeHearts();
+
+  function spawnHeart(){
+    heartsP.push({
+      x: Math.random()*innerWidth,
+      y: innerHeight + 20,
+      vy: -(Math.random()*0.8 + 0.6),
+      vx: (Math.random()-0.5)*0.6,
+      s: Math.random()*10 + 10,
+      a: Math.random()*0.6 + 0.25
+    });
+  }
+
+  function drawHeartShape(x,y,s,alpha){
+    hctx.save();
+    hctx.translate(x,y);
+    hctx.scale(s/18, s/18);
+    hctx.beginPath();
+    hctx.moveTo(0, 4);
+    hctx.bezierCurveTo(0, -6, -12, -6, -12, 4);
+    hctx.bezierCurveTo(-12, 14, 0, 18, 0, 24);
+    hctx.bezierCurveTo(0, 18, 12, 14, 12, 4);
+    hctx.bezierCurveTo(12, -6, 0, -6, 0, 4);
+    hctx.closePath();
+    hctx.fillStyle = `rgba(255, 120, 170, ${alpha})`;
+    hctx.fill();
+    hctx.restore();
+  }
+
+  function drawHearts(){
+    if(!heartsOn) return;
+    hctx.clearRect(0,0,innerWidth,innerHeight);
+
+    if (Math.random() < 0.22) spawnHeart();
+
+    for(let i=heartsP.length-1;i>=0;i--){
+      const p = heartsP[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.a *= 0.998;
+
+      drawHeartShape(p.x,p.y,p.s,p.a);
+
+      if(p.y < -40 || p.a < 0.05) heartsP.splice(i,1);
+    }
+    requestAnimationFrame(drawHearts);
+  }
+
+  // --- YES click ---
+  yes.addEventListener("click", () => {
+    overlay.style.display = "grid";
+    photoWrap.style.display = "block";
+    question.textContent = "She said YES 💖";
+    sub.textContent = "Okay… I knew it 😌";
+    msg.textContent = "";
+
+    typeText("I love you too, Oumaima 🥰", 32);
+
+    // start effects
+    running = true;
+    heartsOn = true;
+
+    // initial big bursts + confetti-like bursts
+    fireworks.burst(innerWidth*0.3, innerHeight*0.35, 220, 3.5, 9.5, 160);
+    fireworks.burst(innerWidth*0.7, innerHeight*0.32, 220, 3.5, 9.5, 160);
+    confettiBurst();
+
+    drawFX();
+    drawHearts();
+  });
+})();
+</script>
+</body>
+</html>
